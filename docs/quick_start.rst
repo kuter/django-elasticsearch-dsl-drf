@@ -102,13 +102,8 @@ Imports required for model definition.
 
 .. code-block:: python
 
-    import json
-
-    from django.conf import settings
     from django.db import models
-    from django.utils.translation import ugettext, ugettext_lazy as _
-
-    from six import python_2_unicode_compatible
+    from django.utils.translation import ugettext_lazy as _
 
 Book statuses
 ~~~~~~~~~~~~~
@@ -140,7 +135,6 @@ Publisher model
 
 .. code-block:: python
 
-    @python_2_unicode_compatible
     class Publisher(models.Model):
         """Publisher."""
 
@@ -187,7 +181,6 @@ Author model
 
 .. code-block:: python
 
-    @python_2_unicode_compatible
     class Author(models.Model):
         """Author."""
 
@@ -232,7 +225,6 @@ Book model
 
 .. code-block:: python
 
-    @python_2_unicode_compatible
     class Book(models.Model):
         """Book."""
 
@@ -240,7 +232,8 @@ Book model
         description = models.TextField(null=True, blank=True)
         summary = models.TextField(null=True, blank=True)
         authors = models.ManyToManyField('books.Author', related_name='books')
-        publisher = models.ForeignKey(Publisher, related_name='books')
+        publisher = models.ForeignKey(Publisher, related_name='books',
+                                      on_delete=models.CASCADE)
         publication_date = models.DateField()
         state = models.CharField(max_length=100,
                                  choices=BOOK_PUBLISHING_STATUS_CHOICES,
@@ -298,27 +291,24 @@ ba able to fill some data.
 
     from django.contrib import admin
 
-    from .models import *
+    from .models import Author, Book, Publisher, Tag
 
 
-    @admin.register(Book)
     class BookAdmin(admin.ModelAdmin):
         """Book admin."""
 
         list_display = ('title', 'isbn', 'price', 'publication_date')
         search_fields = ('title',)
-        filter_horizontal = ('authors', 'tags',)
+        filter_horizontal = ('authors', 'tags')
 
 
-    @admin.register(Author)
     class AuthorAdmin(admin.ModelAdmin):
         """Author admin."""
 
-        list_display = ('name', 'email',)
+        list_display = ('name', 'email')
         search_fields = ('name',)
 
 
-    @admin.register(Publisher)
     class PublisherAdmin(admin.ModelAdmin):
         """Publisher admin."""
 
@@ -326,12 +316,17 @@ ba able to fill some data.
         search_fields = ('name',)
 
 
-    @admin.register(Tag)
     class TagAdmin(admin.ModelAdmin):
         """Tag admin."""
 
         list_display = ('title',)
         search_fields = ('title',)
+
+
+    admin.site.register(Author, AuthorAdmin)
+    admin.site.register(Book, BookAdmin)
+    admin.site.register(Publisher, PublisherAdmin)
+    admin.site.register(Tag, TagAdmin)
 
 Create database tables
 ----------------------
@@ -340,8 +335,8 @@ For now, just run the migrations to create the database tables.
 
 .. code-block:: sh
 
-    ./manage.py makemigrations books
-    ./manage.py migrate books
+    python manage.py makemigrations books
+    python manage.py migrate books
 
 Fill in some data
 -----------------
@@ -465,7 +460,7 @@ Document index
     # See Elasticsearch Indices API reference for available settings
     INDEX.settings(
         number_of_shards=1,
-        number_of_replicas=1
+        number_of_replicas=1,
     )
 
 Custom analyzers
